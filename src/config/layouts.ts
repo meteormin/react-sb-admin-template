@@ -15,7 +15,7 @@ export default {
     ],
   },
   footer: {
-    company: 'TestWorks',
+    company: 'miniyus',
     privacyUrl: '#',
     termsUrl: '#',
   },
