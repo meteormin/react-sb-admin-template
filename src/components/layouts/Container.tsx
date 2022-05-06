@@ -1,7 +1,7 @@
 import React from 'react';
 import Navigator, { Menu } from './Navigator';
-import Loading from '../Loading';
-import AlertModal from '../AlertModal';
+import Loading from '../common/Loading';
+import AlertModal from '../common/AlertModal';
 import Footer from './Footer';
 import { guard } from '../../helpers';
 

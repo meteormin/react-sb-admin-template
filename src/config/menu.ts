@@ -4,7 +4,7 @@ export default {
   name: 'Main',
   navItems: [
     {
-      url: '/test',
+      url: '/',
       name: 'Test',
       icon: 'fas fa-question-circle',
     },
