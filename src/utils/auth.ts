@@ -2,11 +2,16 @@ import config from '../config';
 
 const conf = config();
 
+export interface User {
+  id: number | string;
+  name: string;
+}
+
 export const setUser = (user: object) => {
   window.localStorage.setItem(conf.auth.userKey, JSON.stringify(user));
 };
 
-export const user = (): object | null => {
+export const user = (): User | null => {
   let user;
   if (conf.auth.userKey) {
     user = window.localStorage.getItem(conf.auth.userKey) || null;
@@ -21,6 +26,11 @@ export const setToken = (token: string) => {
 
 export const getToken = (): string | null => {
   return window.localStorage.getItem(conf.auth.tokenKey) || null;
+};
+
+export const logout = (): void => {
+  window.localStorage.removeItem(conf.auth.tokenKey);
+  window.localStorage.removeItem(conf.auth.userKey);
 };
 
 export const isLogin = (): boolean => {

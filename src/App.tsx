@@ -17,6 +17,7 @@ function App() {
         appName={config.app.name}
         isLogin={auth.isLogin()}
         dropDownMenu={config.layouts.header.dropDownMenu}
+        userName={auth.user()?.name || ''}
       />
       <Container
         menu={config.layouts.menu as Menu}

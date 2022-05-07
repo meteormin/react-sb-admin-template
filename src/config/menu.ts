@@ -5,7 +5,7 @@ export default {
   navItems: [
     {
       url: '/',
-      name: 'Test',
+      name: 'Main',
       icon: 'fas fa-question-circle',
     },
     {
@@ -13,19 +13,19 @@ export default {
       name: 'Test',
       icon: 'fas fa-question-circle',
     },
-    {
-      name: '열기/닫기',
-      icon: 'fas fa-question-circle',
-      items: [
-        {
-          url: '#',
-          name: '1',
-        },
-        {
-          url: '#',
-          name: '2',
-        },
-      ],
-    },
+    // {
+    //   name: '열기/닫기',
+    //   icon: 'fas fa-question-circle',
+    //   items: [
+    //     {
+    //       url: '#',
+    //       name: '1',
+    //     },
+    //     {
+    //       url: '#',
+    //       name: '2',
+    //     },
+    //   ],
+    // },
   ],
 };

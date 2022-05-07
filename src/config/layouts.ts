@@ -15,7 +15,7 @@ export default {
     ],
   },
   footer: {
-    company: 'miniyus',
+    company: 'aiworks',
     privacyUrl: '#',
     termsUrl: '#',
   },
