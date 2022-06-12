@@ -2,11 +2,47 @@ import axios, {
   AxiosRequestConfig,
   AxiosRequestHeaders,
   AxiosResponse,
+  AxiosError,
 } from 'axios';
+import { makePath } from './str';
 
 export interface Token {
   tokenType: string | null;
   token: string | null;
+}
+
+export interface ApiResponse {
+  isSuccess: boolean;
+  res: AxiosResponse<any, any> | null;
+  error: ErrorResInterface | null;
+}
+
+export interface ErrorResInterface {
+  name: string;
+  message: string;
+}
+
+export interface Attachment {
+  name: string;
+  file: File;
+}
+
+export class ErrorResponse implements ErrorResInterface {
+  private readonly _name: string;
+  private readonly _message: string;
+
+  constructor(props: ErrorResInterface) {
+    this._name = props.name;
+    this._message = props.message;
+  }
+
+  get name() {
+    return this._name;
+  }
+
+  get message() {
+    return this._message;
+  }
 }
 
 export class ApiClient {
@@ -14,7 +50,9 @@ export class ApiClient {
   protected _token: Token | null;
   protected _headers: AxiosRequestHeaders | null;
   protected _response: AxiosResponse | null;
+  protected _attachment: Attachment[];
   protected _error: any;
+  protected _isSuccess: boolean;
 
   /**
    * @param {string} host
@@ -25,6 +63,8 @@ export class ApiClient {
     this._response = null;
     this._token = null;
     this._error = null;
+    this._isSuccess = false;
+    this._attachment = [];
   }
 
   /**
@@ -63,14 +103,31 @@ export class ApiClient {
       if (this._token.tokenType) {
         token = `${this._token.tokenType} ${this._token.token}`;
       } else {
-        token = `${this._token}`;
+        token = `${this._token.token}`;
       }
 
-      this._headers = Object.assign(this._headers, { Authorization: token });
+      this._headers = Object.assign(this._headers || {}, {
+        Authorization: token,
+      });
     }
 
     if (this._headers != null) {
       config.headers = this._headers;
+    }
+
+    if (this._attachment && this._attachment.length != 0) {
+      this._headers = Object.assign(this._headers || {}, {
+        'Content-Type': 'multipart/form-data',
+      });
+      const data = new FormData();
+      for (const [key, value] of Object.entries(config.data)) {
+        data.append(key, value as string | Blob);
+      }
+
+      for (const attach of this._attachment) {
+        data.append(attach.name, attach.file);
+      }
+      config.data = data;
     }
 
     return this.setResponse(axios.request(config));
@@ -82,25 +139,56 @@ export class ApiClient {
    * @returns {string}
    */
   makeUrl(path: string) {
-    if (this.host.endsWith('/')) {
-      return this.host + path;
-    } else {
-      return `${this.host}/${path}`;
-    }
+    const [schema, host] = this.host.split('://');
+    const url = makePath(host, path);
+    return schema + '://' + url;
   }
 
   /**
    *
    * @param {Promise<AxiosResponse<*, *>>} res
-   * @returns {Promise<any>}
+   * @returns {Promise<ApiResponse>}
    */
-  async setResponse(res: Promise<AxiosResponse<any, any>>): Promise<any> {
+  async setResponse(
+    res: Promise<AxiosResponse<any, any>>,
+  ): Promise<ApiResponse> {
     try {
       this._response = await res;
-      return this.response;
-    } catch (error) {
+      this._isSuccess = true;
+      return {
+        isSuccess: true,
+        res: this.response,
+        error: null,
+      };
+    } catch (error: any | AxiosError) {
+      this._isSuccess = false;
       this._error = error;
-      return this.error;
+      const errorResponse: ErrorResInterface = {
+        name: '서버 에러',
+        message: '관리자에게 문의해주세요.',
+      };
+
+      if (error instanceof AxiosError) {
+        if (error.response?.status || 500 < 500) {
+          if (this.error.response.data.hasOwnProperty('fields')) {
+            errorResponse.name = '유효성 검사 실패';
+            const messages = [];
+            for (const [key] of Object.entries(error.response?.data.fields)) {
+              messages.push(`${key}(이)가 형식에 맞지 않습니다.`);
+            }
+            errorResponse.message = messages.join(', ');
+          } else {
+            const message = error.response?.data.msg || '';
+            errorResponse.message = message.split(':')[1];
+          }
+        }
+      }
+
+      return {
+        isSuccess: false,
+        res: error,
+        error: new ErrorResponse(errorResponse),
+      };
     }
   }
 
@@ -109,7 +197,7 @@ export class ApiClient {
    * @returns {boolean}
    */
   isSuccess(): boolean {
-    return this.response?.statusText === 'OK' && this.error != null;
+    return this._isSuccess;
   }
 
   /**
@@ -129,7 +217,16 @@ export class ApiClient {
    * @returns {ApiClient}
    */
   withHeader(headers: AxiosRequestHeaders): ApiClient {
-    this._headers = headers;
+    this._headers = Object.assign(this._headers || {}, headers);
+    return this;
+  }
+
+  attach(file: Attachment | Attachment[]) {
+    if (Array.isArray(file)) {
+      this._attachment.concat(file);
+    } else {
+      this._attachment.push(file);
+    }
     return this;
   }
 
@@ -137,74 +234,74 @@ export class ApiClient {
    *
    * @param {string} path
    * @param {*} params
-   * @returns {Promise<AxiosResponse<*, *>|*>}
+   * @returns {Promise<ApiResponse>|*|null>}
    */
-  get(path: string, params: object = {}) {
+  get(path: string, params: any = {}): Promise<ApiResponse> {
     const config: AxiosRequestConfig = {};
     config.method = 'GET';
     config.url = this.makeUrl(path);
     config.params = params;
 
-    return this.setResponse(this.request(config));
+    return this.request(config);
   }
 
   /**
    *
    * @param {string} path
    * @param {*} data
-   * @returns {Promise<AxiosResponse<*, *>|*|null>}
+   * @returns {Promise<ApiResponse>}
    */
-  post(path: string, data: object = {}) {
+  post(path: string, data: object = {}): Promise<ApiResponse> {
     const config: AxiosRequestConfig = {};
     config.method = 'POST';
     config.url = this.makeUrl(path);
     config.data = data;
 
-    return this.setResponse(this.request(config));
+    return this.request(config);
   }
 
   /**
    *
    * @param {string} path
    * @param {*} data
-   * @returns {Promise<AxiosResponse<*, *>|*|null>}
+   * @returns {Promise<ApiResponse>|*|null>}
    */
-  put(path: string, data: object = {}) {
+  put(path: string, data: object = {}): Promise<ApiResponse> {
     const config: AxiosRequestConfig = {};
     config.method = 'PUT';
     config.url = this.makeUrl(path);
     config.data = data;
 
-    return this.setResponse(this.request(config));
+    return this.request(config);
   }
 
   /**
    *
    * @param {string} path
    * @param {*} data
-   * @returns {Promise<AxiosResponse<*, *>|*|null>}
+   * @returns {Promise<ApiResponse>|*|null>}
    */
-  patch(path: string, data: object = {}) {
+  patch(path: string, data: object = {}): Promise<ApiResponse> {
     const config: AxiosRequestConfig = {};
     config.method = 'PATCH';
     config.url = this.makeUrl(path);
     config.data = data;
 
-    return this.setResponse(this.request(config));
+    return this.request(config);
   }
 
   /**
    *
    * @param {string} path
    * @param {*} data
-   * @returns {Promise<AxiosResponse<*, *>|*|null>}
+   * @returns {Promise<ApiResponse>|*|null>}
    */
-  delete(path: string, data: object = {}) {
+  delete(path: string, data: object = {}): Promise<ApiResponse> {
     const config: AxiosRequestConfig = {};
     config.method = 'DELETE';
     config.url = this.makeUrl(path);
     config.data = data;
 
-    return this.setResponse(this.request(config));
+    return this.request(config);
   }
 }

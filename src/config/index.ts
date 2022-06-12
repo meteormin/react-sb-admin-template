@@ -5,7 +5,9 @@ export default () => ({
     name: 'Test',
   },
   api: {
-    host: process.env.REACT_APP_API_SERVER,
+    default: {
+      host: process.env.REACT_APP_API_SERVER,
+    },
   },
   auth: {
     tokenKey: '_token',
