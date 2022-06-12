@@ -1,5 +1,5 @@
-import Error from './Error';
 import React from 'react';
+import Error from './Error';
 
 const NotFoundPage = () => {
   return (

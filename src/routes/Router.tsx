@@ -14,7 +14,7 @@ const Router = () => {
         <Route
           path="/"
           element={
-            <guard.Protected auth={auth.isLogin()} redirectPath={'/login'}>
+            <guard.Protected auth={auth.isLogin()} redirect={'/login'}>
               <TestMain />
             </guard.Protected>
           }
@@ -23,7 +23,7 @@ const Router = () => {
           <Route
             index
             element={
-              <guard.Restricted condition={auth.isLogin()} redirectPath={'/'}>
+              <guard.Restricted condition={auth.isLogin()} redirect={'/'}>
                 <LoginPage />
               </guard.Restricted>
             }
