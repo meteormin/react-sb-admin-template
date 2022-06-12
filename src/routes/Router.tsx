@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router';
 import { BrowserRouter } from 'react-router-dom';
 import { auth, guard } from '../helpers';
-import { NotFoundPage } from '../pages/error';
+import { ForbiddenPage, NotFoundPage } from "../pages/Error";
 import { LoginPage, LogoutPage } from '../pages/login';
 import { FindPassPage } from '../pages/password';
 import { TestMain } from '../pages/test';
@@ -33,6 +33,10 @@ const Router = () => {
           <Route path="find" element={<FindPassPage />} />
         </Route>
         <Route path="/logout" element={<LogoutPage />} />
+        <Route path="/error">
+          <Route path="404" element={<NotFoundPage />} />
+          <Route path="503" element={<ForbiddenPage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
